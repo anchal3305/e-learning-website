@@ -11,10 +11,26 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+# Manually specify the path to the .env file
+ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../.env")
+print(f"🔹 ENV_PATH: {ENV_PATH}")  # Debugging print
+
+# Load the .env file
+load_dotenv(ENV_PATH)
+
+# Retrieve the API key
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+print(f"🔹 GEMINI_API_KEY (Loaded in settings.py): {GEMINI_API_KEY}")  # Debugging print
+
+if not GEMINI_API_KEY:
+    print("⚠️ GEMINI_API_KEY is still missing! Check your .env file or environment variables.")
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,7 +42,6 @@ SECRET_KEY = 'django-insecure-022*-)(ikj&5b*(ebv3rpy6$+y4er4oo*e=8z+rpoieox7m%=(
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -40,7 +55,11 @@ INSTALLED_APPS = [
     'users',
     'rest_framework',
     'rest_framework_simplejwt',
-    'corsheaders'
+    'corsheaders',
+    'notes',
+    'django_extensions',
+    'forum',
+    'chatbot',
 ]
 
 MIDDLEWARE = [
@@ -97,9 +116,7 @@ DATABASES = {
 AUTH_USER_MODEL = 'users.CustomUser'
 
 REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (),
 
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
@@ -107,6 +124,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
     ],
+    'DEFAULT_PERMISSION_CLASSES': (
+        "rest_framework.permissions.AllowAny",
+    ),
 }
 
 # Password validation
@@ -143,7 +163,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -154,13 +174,24 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
-        'console': {
+        'file': {
             'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
         },
     },
-    'root': {
-        'handlers': ['console'],
-        'level': 'DEBUG',
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'chatbot': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
     },
 }
+
+

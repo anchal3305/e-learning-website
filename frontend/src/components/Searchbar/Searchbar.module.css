@@ -1,0 +1,103 @@
+.searchInputDiv{
+  display: table;
+  margin:8px auto;
+}
+
+.search_section{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin:13px 0px;
+}
+
+.searchInput{
+  width:50vw;
+  background-color:whitesmoke;
+  border: none;
+  padding: 9px;
+  border-radius: 2px;
+}
+
+.searchButton{
+  background-color:whitesmoke;
+  color: gray;
+  border: none;
+  padding: 9px;
+  border-radius: 2px;
+}
+
+.courseCard{
+  margin:30px;
+  width: 350px;
+  height: 420px;
+  position:relative;
+}
+
+.searchResultDiv{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.title{
+  margin:6px 0px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.description{
+  font-size: 15px;
+  overflow-x: hidden;
+}
+
+.button{
+  color:white;
+  text-decoration: none;
+  display: inline-block;
+  position: absolute;
+  padding: 10px 20px;
+  bottom:12px;
+}
+
+a{
+  text-decoration: none;
+  color:white;
+  font-weight: 600;
+}
+
+
+.modalContainer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.videoPlayer {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 800px;
+  position: relative;
+}
+
+.closeModalButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: red;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.closeModalButton:hover {
+  background-color: darkred;
+}

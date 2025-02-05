@@ -1,66 +1,83 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import RegisterSerializer, LoginSerializer  # Import serializers
-from .models import CustomUser  # Import the CustomUser model
+from rest_framework import status, generics
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework.permissions import IsAuthenticated
+from .models import CustomUser
+from django.contrib.auth import get_user_model
+from .serializers import LoginSerializer, RegisterSerializer, UserDetailSerializer
+from datetime import timedelta
+import logging
 
-class RegisterView(APIView):
-    """
-    API view to handle user registration.
-    """
-    def post(self, request):
-        serializer = RegisterSerializer(data=request.data)
+# Configure logging for debugging purposes
+logger = logging.getLogger(__name__)
+
+# Helper function to generate tokens with extended expiration time
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    # Set the expiration time for the access token (e.g., 24 hours)
+    access_token = refresh.access_token
+    access_token.set_exp(lifetime=timedelta(hours=24))  # Access token expires in 24 hours
+    return {
+        'access': str(access_token),
+        'refresh': str(refresh)
+    }
+
+class RegisterView(generics.CreateAPIView):
+    permission_classes = []  # No authentication required for signup
+    serializer_class = RegisterSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response(
-                {"message": "User registered successfully."},
-                status=status.HTTP_201_CREATED
-            )
+            return Response({"message": "User registered successfully."}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 class LoginView(APIView):
-    """
-    API view to handle user login.
-    """
     def post(self, request):
-        print("Request Data:", request.data)  # Debug: Check raw incoming data
+        email = request.data.get("email")
+        password = request.data.get("password")
 
-        # Initialize the serializer with the request data
-        serializer = LoginSerializer(data=request.data)
+        # Authenticate the user
+        user = get_user_model().objects.filter(email=email).first()
 
-        # Check if serializer is valid
-        if serializer.is_valid():
-            print("Validated Data:", serializer.validated_data)  # Debug: Check validated data
+        if user and user.check_password(password):
+            # Generate tokens
+            tokens = get_tokens_for_user(user)
+            decoded_access = AccessToken(tokens['access'])
+            exp_time = decoded_access["exp"]
 
-            email = serializer.validated_data.get('email')
-            password = serializer.validated_data.get('password')
-
-            print(f"Email: {email}, Password: {password}")  # Debug: Ensure password is present
-
-            user = CustomUser.objects.filter(email=email).first()
-            if not user or not user.check_password(password):
-                print(f"Invalid credentials for email: {email}")  # Debug line
-                return Response(
-                    {"error": "Invalid credentials or user does not exist."},
-                    status=status.HTTP_401_UNAUTHORIZED
-                )
-
-            if not user.is_active:
-                return Response(
-                    {"error": "This account is inactive."},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-
-            refresh = RefreshToken.for_user(user)
-
+            # Return tokens and user info
             return Response({
-                "message": "Login successful.",
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-            }, status=status.HTTP_200_OK)
+                "user": {"id": user.id, "email": user.email},
+                "access": tokens['access'],
+                "refresh": tokens['refresh'],
+                "expires_at": exp_time,  # Send expiration time as well
+            })
 
-        print("Serializer Errors:", serializer.errors)  # Debug: Check serializer errors if not valid
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # Log failed login attempt
+        logger.warning(f"Failed login attempt for email: {email}")
+        return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
+class TokenRefreshView(APIView):
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+        try:
+            # Validate the refresh token and generate a new access token
+            refresh = RefreshToken(refresh_token)
+            new_access_token = str(refresh.access_token)
+            return Response({"access": new_access_token})
+        except Exception as e:
+            return Response({"detail": "Invalid refresh token"}, status=status.HTTP_400_BAD_REQUEST)
+        
+class ProtectedResourceView(APIView):
+    permission_classes = [IsAuthenticated]  # Only authenticated users can access this view
+    queryset = CustomUser.objects.all()
+    serializer_class = UserDetailSerializer  # Use the new serializer
+
+    def get(self, request, *args, **kwargs):
+        # Return the details of the authenticated user
+        user = request.user  # Get the currently authenticated user
+        serializer = self.serializer_class(user)
+        return Response(serializer.data)

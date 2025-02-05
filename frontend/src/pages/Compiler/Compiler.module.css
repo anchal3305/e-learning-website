@@ -1,0 +1,14 @@
+.output{
+  background-color: #1e1e1e;
+  width: 50vw;
+  color:grey;
+  padding:12px;
+}
+
+.language{
+  margin-left: 13px;
+  display:flex;
+  justify-content: space-between;
+  margin:auto;
+  padding: 4px 18px;
+}
