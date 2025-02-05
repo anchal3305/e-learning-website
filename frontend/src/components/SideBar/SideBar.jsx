@@ -17,7 +17,7 @@ import {NavLink} from "react-router-dom";
 const SideBar = () => {
   //Agar sidebar open rahega toh arrow left hona chahiye
   //Agar sidebar close rahega toh arrow right hona chahiye
-  const [isOpen , setIsOpen] = useState(true);
+  const [isOpen , setIsOpen] = useState(false);
 
   //Agar sidebar se koi tab select rahega toh active karna.
   const [selectedTab , setSelectedTab] = useState("Home");
@@ -41,7 +41,7 @@ const SideBar = () => {
       
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
-          <NavLink to="/" className={`nav-link link-body-emphasis ${selectedTab =="Home" ? "active text-white" : ""}`} aria-current="page" onClick={() => handleMenuItems("Home")}>
+          <NavLink to="/home" className={`nav-link link-body-emphasis ${selectedTab =="Home" ? "active text-white" : ""}`} aria-current="page" onClick={() => handleMenuItems("Home")}>
             <GoHome /> {isOpen ? "Home" : " "}
           </NavLink>
         </li>
@@ -93,19 +93,6 @@ const SideBar = () => {
         <li className="border-top my-3"></li>
       </ul>
       <hr/>
-      <div className="dropdown">
-        <a href="#" className="d-flex align-items-center link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-          <img src="https://github.com/mdo.png" alt="" width="32" height="32" className="rounded-circle me-2"/>
-          <strong>mdo</strong>
-        </a>
-        <ul className="dropdown-menu text-small shadow">
-          <li><a className="dropdown-item" href="#">New project...</a></li>
-          <li><a className="dropdown-item" href="#">Settings</a></li>
-          <li><a className="dropdown-item" href="#">Profile</a></li>
-          <li><hr className="dropdown-divider"/></li>
-          <li><a className="dropdown-item" href="#">Sign out</a></li>
-        </ul>
-      </div>
     </div>
 
   </>

@@ -1,16 +1,6 @@
 from rest_framework import serializers
-from .models import CustomUser
 from rest_framework_simplejwt.tokens import RefreshToken
-
-
-class UserSerializer(serializers.ModelSerializer):
-    """
-    Serializer for CustomUser model to return user details.
-    """
-    class Meta:
-        model = CustomUser
-        fields = ['id', 'email']
-
+from .models import CustomUser
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
@@ -20,50 +10,65 @@ class RegisterSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = ['id', 'email', 'password']
         extra_kwargs = {
-            'password': {'write_only': True},  # Ensure the password is write-only
+            'password': {'write_only': True},
         }
+
+    def validate_email(self, value):
+        """
+        Check if the email already exists in the database.
+        """
+        if CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
+        return value
 
     def create(self, validated_data):
         """
-        Create a new user instance with validated data.
+        Create and return a new user instance.
         """
-        # Using create_user ensures that the password is hashed before saving
-        user = CustomUser.objects.create_user(
+        return CustomUser.objects.create_user(
             email=validated_data['email'],
             password=validated_data['password']
         )
-        return user
 
 
 class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login.
+    """
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
-      # Debugging to check if the password is coming through
-def validate(self, attrs):
-    email = attrs.get('email', '').strip()  # Strip any leading/trailing spaces
-    password = attrs.get('password', '').strip()  # Strip any leading/trailing spaces
+    def validate(self, attrs):
+        """
+        Validate login credentials and check if the user exists and is active.
+        """
+        email = attrs.get('email', '').strip()
+        password = attrs.get('password', '').strip()
 
-    print("Raw Data:", attrs)  # Debugging to check if the password is coming through
+        user = CustomUser.objects.filter(email=email).first()
+        if not user or not user.check_password(password):
+            raise serializers.ValidationError("Invalid credentials or user does not exist.")
 
-    if not email or not password:
-        raise serializers.ValidationError("Email and password are required.")
-    
-    # Authenticate user
-    user = CustomUser.objects.filter(email=email).first()
-    if not user or not user.check_password(password):
-        raise serializers.ValidationError("Invalid credentials or user does not exist.")
+        if not user.is_active:
+            raise serializers.ValidationError("This account is inactive.")
 
-    if not user.is_active:
-        raise serializers.ValidationError("This account is inactive.")
+        attrs['user'] = user
+        return attrs
 
-    # Return user info and tokens
-    return {
-        'id': user.id,
-        'email': user.email,
-        'tokens': {
-            'refresh': str(RefreshToken.for_user(user)),
-            'access': str(RefreshToken.for_user(user).access_token),
+    def get_tokens(self, user):
+        """
+        Generate and return JWT tokens for the authenticated user.
+        """
+        refresh = RefreshToken.for_user(user)
+        return {
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
         }
-    }
 
+class UserDetailSerializer(serializers.ModelSerializer):
+    """
+    Serializer for returning user details like email and ID.
+    """
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email']
